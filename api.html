@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Database Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #student-details {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Database Management</h1>
+
+    <h2>Get All Students</h2>
+    <button onclick="fetchAllStudents()">Get All Students</button>
+    <ul id="student-list">
+    </ul>
+
+    <h2>Get Low Attendance Students</h2>
+    <button onclick="fetchLowAttendanceStudents()">Fetch Low Attendance Students</button>
+    <ul id="low-attendance-list">
+    </ul>
+
+    <h2>Get Student Details by Roll</h2>
+    <input type="number" id="roll-input" placeholder="Enter Roll Number">
+    <button onclick="fetchStudentByRoll()">Fetch Student by Roll</button>
+    <div id="student-details">
+    </div>
+
+    <h2>Add New Student</h2>
+    <input type="number" id="new-roll" placeholder="Roll">
+    <input type="text" id="new-name" placeholder="Name">
+    <input type="text" id="new-branch" placeholder="Branch">
+    <input type="number" id="new-attendance" placeholder="Attendance">
+    <button onclick="addNewStudent()">Add New Student</button>
+
+    <h2>Change Student Branch</h2>
+    <input type="number" id="change-roll" placeholder="Roll">
+    <input type="text" id="new-branch-name" placeholder="New Branch">
+    <button onclick="changeStudentBranch()">Change Branch</button>
+
+    <h2>Delete Student</h2>
+    <input type="number" id="delete-roll" placeholder="Roll">
+    <button onclick="deleteStudent()">Delete Student</button>
+
+    <script>
+        async function fetchData(url, options) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function fetchAllStudents() {
+            const url = 'http://localhost:3000/get_students';
+            fetchData(url)
+                .then(data => {
+                    const studentList = document.getElementById('student-list');
+                    studentList.innerHTML = '';
+
+                if (data.length === 0) {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'No students found.';
+                    studentList.appendChild(listItem);
+                } else {
+                    data.forEach(student => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${student.name} (Roll: ${student.roll}), Branch: ${student.branch}`;
+                        studentList.appendChild(listItem);
+                    });
+                }
+            });
+        }
+
+        function fetchLowAttendanceStudents() {
+            const url = 'http://localhost:3000/gg_group';
+            fetchData(url).then(data => {
+                const lowAttendanceList = document.getElementById('low-attendance-list');
+                lowAttendanceList.innerHTML = '';
+
+                data.forEach(student => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${student.name} (Roll: ${student.roll})`;
+                    lowAttendanceList.appendChild(listItem);
+                });
+            });
+        }
+
+        function fetchStudentByRoll() {
+            const roll = document.getElementById('roll-input').value;
+            const url = `http://localhost:3000/student/${roll}`;
+            fetchData(url).then(student => {
+                const studentDetails = document.getElementById('student-details');
+                if (student) {
+                    studentDetails.textContent = `Name: ${student.name}, Roll: ${student.roll}, Branch: ${student.branch}, Attendance: ${student.attendance}`;
+                } else {
+                    studentDetails.textContent = `Student not found with Roll: ${roll}`;
+                }
+            });
+        }
+
+        function addNewStudent() {
+            const newRoll = document.getElementById('new-roll').value;
+            const newName = document.getElementById('new-name').value;
+            const newBranch = document.getElementById('new-branch').value;
+            const newAttendance = document.getElementById('new-attendance').value;
+
+            const url = 'http://localhost:3000/admission';
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roll: newRoll,
+                    name: newName,
+                    branch: newBranch,
+                    attendance: parseInt(newAttendance)
+                })
+            };
+
+            fetchData(url, options)
+                .then(newStudent => {
+                    alert(`New student added: ${newStudent.name} (Roll: ${newStudent.roll})`);
+                });
+        }
+
+        function changeStudentBranch() {
+            const roll = document.getElementById('change-roll').value;
+            const newBranch = document.getElementById('new-branch-name').value;
+
+            const url = `http://localhost:3000/change_branch/${roll}`;
+            const options = {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    branch: newBranch
+                })
+            };
+
+            fetchData(url, options)
+                .then(updatedStudent => {
+                    alert(`Branch changed for ${updatedStudent.name} (Roll: ${updatedStudent.roll})`);
+                });
+        }
+
+        function deleteStudent() {
+            const roll = document.getElementById('delete-roll').value;
+
+            const url = `http://localhost:3000/delete_student/${roll}`;
+            const options = {
+                method: 'DELETE'
+            };
+
+            fetchData(url, options)
+                .then(() => {
+                    alert(`Student with Roll ${roll} deleted`);
+                });
+        }
+    </script>
+</body>
+</html>
